@@ -1,0 +1,13 @@
+from gps_modulator.detectors.velocity_anomaly import velocity_anomaly_detector
+
+class detection_pipeline:
+    def __init__(self, threshold_velocity: float):
+        self.velocity_anomaly_detector = velocity_anomaly_detector(threshold_velocity)
+
+    def process_gps_point(self, present_point: dict) -> dict:
+        anomaly_detected = self.velocity_anomaly_detector.detect(present_point)
+        result = {
+            'velocity_anomaly': anomaly_detected,
+            'point': present_point
+        }
+        return result
