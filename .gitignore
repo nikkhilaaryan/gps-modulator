@@ -1,0 +1,18 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual env
+.venv/
+
+# VSCode or PyCharm stuff
+.vscode/
+.idea/
+
+# Test/run caches
+.pytest_cache/
+
+# Ignore data logs if needed
+*.csv
+*.log
