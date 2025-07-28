@@ -1,0 +1,21 @@
+[project]
+name = "gps_modulator"
+version = "0.1.0"
+description = "A modular system for detecting GPS spoofing and maintaining trajectory accuracy using fallback mechanisms."
+authors = [
+    { name="Aryan Raj", email="nikhilaryan0928@gmail.com" }
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "matplotlib>=3.10.0",
+    "numpy>=2.3.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
