@@ -6,13 +6,9 @@ __pycache__/
 # Virtual env
 .venv/
 
-# VSCode or PyCharm stuff
-.vscode/
-.idea/
-
 # Test/run caches
 .pytest_cache/
 
-# Ignore data logs if needed
+# Ignore data logs
 *.csv
 *.log
