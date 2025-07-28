@@ -1,8 +1,8 @@
-# GPS Modulator
+# gps-modulator
 A modular GPS spoofing detection and path correction system for real-time navigation resilience.
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Version](https://img.shields.io/badge/version-1.0.0-brightgreen)
+![Version](https://img.shields.io/badge/version-0.1.0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 > **Note:** This project is currently under active development. Interfaces and internal modules are subject to change until a stable release.
