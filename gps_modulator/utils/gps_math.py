@@ -15,15 +15,15 @@ def haversine(lat1, lon1, lat2, lon2):
     distance = EARTH_RADIUS * c
     return distance 
 
-def compute_velocity(past_point, present_point):
-    if past_point is None:
+def compute_velocity(previous_point, present_point):
+    if previous_point is None:
         return 0.0
     
-    time_interval = present_point['timestamp'] - past_point['timestamp']
+    time_interval = present_point['timestamp'] - previous_point['timestamp']
     if time_interval <= 0.0:
         return 0.0
     
-    distance = haversine(past_point['lat'], past_point['lon'], present_point['lat'], present_point['lon'])
+    distance = haversine(previous_point['lat'], previous_point['lon'], present_point['lat'], present_point['lon'])
     velocity = distance / time_interval
     return velocity
 
