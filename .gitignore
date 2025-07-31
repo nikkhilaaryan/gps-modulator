@@ -12,3 +12,6 @@ __pycache__/
 # Ignore data logs
 *.csv
 *.log
+
+# Ignore generated visualizations
+output/
