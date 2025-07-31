@@ -17,6 +17,10 @@ class FallbackManager:
 
             estimated_position = self.reckoner.update(imu_data, delta_time)
             return estimated_position
+        else:
+            # If fallback is already active, continue with dead reckoning
+            estimated_position = self.reckoner.update(imu_data, delta_time)
+            return estimated_position
 
     def handle_gps_restored(self, next_gps_position: Dict[str, float]):
         if self.fallback_active:
