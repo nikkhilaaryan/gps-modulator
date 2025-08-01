@@ -6,7 +6,12 @@ Simulates an autonomous drone navigation system responding to a GPS spoofing att
 
 import matplotlib.pyplot as plt
 import os
-from .path_plotter import plot_spoofing_scenario, create_demo_scenario
+import sys
+import os.path as osp
+
+# Add parent directory to path for imports
+sys.path.append(osp.dirname(osp.abspath(__file__)))
+from path_plotter import plot_spoofing_scenario, create_demo_scenario
 
 def print_scenario_explanation():
     """Print a concise explanation of the visualization."""
