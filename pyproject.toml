@@ -1,5 +1,5 @@
 [project]
-name = "gps-spoofing-detector"
+name = "gps-modulator"
 version = "1.0.0"
 description = "A robust GPS spoofing detection and correction system with real-time processing capabilities"
 authors = [
