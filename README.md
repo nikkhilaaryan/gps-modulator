@@ -1,4 +1,4 @@
-# GPS Spoofing Detection and Correction System
+# gps-modulator
 
 A comprehensive Python package for real-time detection and correction of GPS spoofing attacks using velocity-based anomaly detection and dead reckoning techniques.
 
@@ -243,3 +243,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with Python and matplotlib for visualization
 - Uses haversine formula for accurate distance calculations
 - Designed for real-world GPS spoofing detection applications
+
+## Author
+
+**ARYAN RAJ**  
+Email: nikhilaryan0928@gmail.com
+
