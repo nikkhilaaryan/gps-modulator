@@ -1,74 +1,245 @@
-# gps-modulator
-A modular GPS spoofing detection and path correction system for real-time navigation resilience.
+# GPS Spoofing Detection and Correction System
 
-![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Version](https://img.shields.io/badge/version-0.1.0-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
-
-> **Note:** This project is currently under active development. Interfaces and internal modules are subject to change until a stable release.
-
+A comprehensive Python package for real-time detection and correction of GPS spoofing attacks using velocity-based anomaly detection and dead reckoning techniques.
 
 ## Features
 
-- Real-time GPS spoofing detection based on velocity anomaly analysis
-- Seamless fallback to dead reckoning using IMU data during spoofing
-- Automatic recovery and reintegration of GPS data post-spoofing
-- Path visualization for GPS, spoofed, and corrected trajectories
-- Modular architecture supporting custom detection and defense modules
+- **Real-time GPS spoofing detection** using velocity anomaly analysis
+- **Automatic correction** of spoofed GPS points using dead reckoning
+- **Live visualization** of GPS paths with spoofing indicators
+- **Modular architecture** for easy extension and testing
+- **Command-line interface** with configurable parameters
+- **Mock data generation** for testing and demonstration
+
+## Architecture
+
+The system is organized into modular components:
+
+```
+gps-spoofing-detector/
+├── src/
+│   └── gps_spoofing_detector/
+│       ├── __init__.py
+│       ├── cli.py                 # Command-line interface
+│       ├── detectors/             # Spoofing detection algorithms
+│       │   ├── __init__.py
+│       │   └── velocity_anomaly_detector.py
+│       ├── correction/            # GPS correction methods
+│       │   ├── __init__.py
+│       │   ├── path_corrector.py
+│       │   └── dead_reckoner.py
+│       ├── streaming/             # GPS data streaming
+│       │   ├── __init__.py
+│       │   ├── gps_reader.py
+│       │   └── data_generators.py
+│       ├── visualization/           # Real-time plotting
+│       │   ├── __init__.py
+│       │   └── live_plotter.py
+│       └── utils/                   # Mathematical utilities
+│           ├── __init__.py
+│           └── gps_math.py
+├── tests/                         # Unit tests
+├── examples/                      # Usage examples
+├── docs/                          # Documentation
+├── setup.py                       # Package configuration
+└── README.md
+```
 
 ## Installation
 
-It is recommended to use a Python virtual environment.
+### From Source
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate    # On Unix or MacOS
-.venv\Scripts\activate       # On Windows
-
-pip install -r requirements.txt
+git clone <repository-url>
+cd gps-spoofing-detector
+pip install -e .
 ```
 
-
-## Usage
-
-The package can be used to detect GPS spoofing and maintain path continuity in real time.
-
-To simulate a spoofing scenario with visualization:
+### Development Installation
 
 ```bash
-python -m tests.test_pipeline_visual
-This will run the full detection pipeline and render the true, spoofed, and corrected trajectories.
+pip install -e ".[dev]"
 ```
 
-To test individual modules, such as dead reckoning or fallback management:
+## Quick Start
+
+### Command Line Usage
 
 ```bash
-pytest -s tests/test_dead_reckoner.py
-pytest -s tests/test_fallback_manager.py
+# Basic usage with live plotting
+gps-spoofing-detector
+
+# Disable plotting (headless mode)
+gps-spoofing-detector --no-plot
+
+# Custom velocity threshold
+gps-spoofing-detector --threshold 30.0
+
+# Verbose logging with custom parameters
+gps-spoofing-detector --threshold 25 --max-points 500 --verbose
 ```
-For integration into an external system, import and initialize the detection pipeline:
+
+### Python API Usage
+
+```python
+from gps_spoofing_detector import (
+    VelocityAnomalyDetector,
+    PathCorrector,
+    GpsReader,
+    LivePathPlotter,
+    MockGpsGenerator
+)
+
+# Initialize components
+detector = VelocityAnomalyDetector(threshold_mps=50.0)
+corrector = PathCorrector()
+
+# Create mock data source
+generator = MockGpsGenerator()
+gps_reader = GpsReader(generator.generate)
+
+# Process GPS data
+previous_point = None
+for point in gps_reader.stream():
+    is_spoofed = detector.detect(previous_point, point)
+    if is_spoofed:
+        corrected_point = corrector.correct(previous_point, point, is_spoofed=True)
+        print(f"Spoofing detected and corrected: {corrected_point}")
+    previous_point = point
+```
+
+## Configuration
+
+### Command Line Options
+
+- `--threshold`: Velocity threshold for spoofing detection (m/s, default: 50.0)
+- `--max-points`: Maximum points to display on plot (default: 1000)
+- `--update-interval`: Plot update interval in milliseconds (default: 100)
+- `--no-plot`: Disable live plotting
+- `--verbose`: Enable verbose logging
+
+### Detector Configuration
+
+```python
+from gps_spoofing_detector.detectors import VelocityAnomalyDetector
+
+# Create detector with custom threshold
+detector = VelocityAnomalyDetector(threshold_mps=30.0)
+```
+
+### Mock Data Configuration
+
+```python
+from gps_spoofing_detector.streaming import MockGpsGenerator
+
+# Configure mock data with custom parameters
+generator = MockGpsGenerator(
+    start_lat=37.7749,        # Starting latitude
+    start_lon=-122.4194,      # Starting longitude
+    velocity_mps=5.0,         # Base velocity (m/s)
+    spoof_rate=0.15,          # Probability of spoofing (0-1)
+    spoof_magnitude=0.001      # Spoofing magnitude (degrees)
+)
+```
+
+## API Reference
+
+### Core Classes
+
+#### `VelocityAnomalyDetector`
+
+Detects GPS spoofing based on unrealistic velocity changes.
+
+```python
+detector = VelocityAnomalyDetector(threshold_mps=50.0)
+is_spoofed = detector.detect(previous_point, current_point)
+```
+
+#### `PathCorrector`
+
+Corrects spoofed GPS points using dead reckoning.
+
+```python
+corrector = PathCorrector()
+corrected_point = corrector.correct(previous_point, spoofed_point, is_spoofed=True)
+```
+
+#### `GpsReader`
+
+Reads and validates GPS data from streaming sources.
+
+```python
+reader = GpsReader(data_source)
+for point in reader.stream():
+    process_point(point)
+```
+
+#### `LivePathPlotter`
+
+Real-time visualization of GPS paths with spoofing indicators.
+
+```python
+plotter = LivePathPlotter(max_points=1000)
+plotter.add_point(raw_point, corrected_point, is_spoofed=True)
+plotter.start_animation()
+```
+
+## Testing
+
+Run the test suite:
 
 ```bash
-from gps_modulator.core.detection_pipeline import DetectionPipeline
+pytest tests/
 ```
-## Roadmap
 
-The following features are planned for future releases:
+Run with coverage:
 
-- Real-time integration with external GPS and IMU hardware sources
-- Automatic calibration of velocity thresholds based on object type
-- Additional spoofing detection techniques (e.g., location drift, bearing anomalies)
-- Support for 3D path visualization and elevation data
-- REST API interface for live system integration
-- Extended logging and telemetry export to CSV/JSON
-- CLI tool for batch analysis of GPS datasets
+```bash
+pytest tests/ --cov=gps_spoofing_detector
+```
+
+## Development
+
+### Code Style
+
+This project follows PEP 8 conventions:
+- Snake_case for functions and variables
+- PascalCase for classes
+- Type hints for all public APIs
+- Comprehensive docstrings
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes with tests
+4. Ensure code passes linting (`flake8 src/`)
+5. Commit changes (`git commit -m 'Add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run code formatting
+black src/ tests/
+
+# Run type checking
+mypy src/
+
+# Run linting
+flake8 src/
+```
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Acknowledgments
 
-## Author
-
-**Aryan Raj** 
-For questions, collaborations, or feedback: [nikhilaryan0928@gmail.com](mailto:nikhilaryan0928@gmail.com)
+- Built with Python and matplotlib for visualization
+- Uses haversine formula for accurate distance calculations
+- Designed for real-world GPS spoofing detection applications
