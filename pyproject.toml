@@ -1,21 +1,85 @@
 [project]
-name = "gps_modulator"
-version = "0.1.0"
-description = "A modular system for detecting GPS spoofing and maintaining trajectory accuracy using fallback mechanisms."
+name = "gps-spoofing-detector"
+version = "1.0.0"
+description = "A robust GPS spoofing detection and correction system with real-time processing capabilities"
 authors = [
-    { name="Aryan Raj", email="nikhilaryan0928@gmail.com" }
+    {name = "Aryan Raj", email = "nikhilaryan0928@gmail.com"}
 ]
-license = { text = "MIT" }
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.8"
+keywords = ["gps", "spoofing", "detection", "correction", "navigation", "security"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
 dependencies = [
-    "matplotlib>=3.10.0",
-    "numpy>=2.3.0"
+    "matplotlib>=3.5.0",
+    "numpy>=1.21.0"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=5.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/aryan0931/gps-spoofing-detector"
+Documentation = "https://github.com/aryan0931/gps-spoofing-detector#readme"
+Repository = "https://github.com/aryan0931/gps-spoofing-detector.git"
+"Bug Tracker" = "https://github.com/aryan0931/gps-spoofing-detector/issues"
+
+[project.scripts]
+gps-spoofing-detector = "gps_spoofing_detector.cli:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
