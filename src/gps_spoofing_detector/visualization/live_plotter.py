@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.collections import PathCollection
+import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 import threading
 import time
@@ -149,7 +150,7 @@ class LivePathPlotter:
                         list(zip(spoofed_lons, spoofed_lats))
                     )
             else:
-                self.spoofed_scatter.set_offsets([])
+                self.spoofed_scatter.set_offsets(np.empty((0, 2)))
             
             # Auto-scale axes
             if self.raw_lats:
@@ -175,6 +176,12 @@ class LivePathPlotter:
         if not self.fig:
             self.setup_plot()
         
+        # Force window to front and maximize
+        try:
+            plt.get_current_fig_manager().window.state('zoomed')
+        except:
+            pass
+        
         self._animation = animation.FuncAnimation(
             self.fig, 
             self.update_plot,
@@ -184,7 +191,8 @@ class LivePathPlotter:
         )
         
         self._is_running = True
-        plt.show()
+        plt.show(block=False)
+        plt.pause(0.1)  # Ensure window renders
     
     def stop_animation(self) -> None:
         """Stop the live animation."""

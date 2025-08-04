@@ -2,9 +2,13 @@
 
 import argparse
 import logging
-import time
 import sys
 from typing import Dict, Any
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 from .detectors import VelocityAnomalyDetector
 from .correction import PathCorrector
