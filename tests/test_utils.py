@@ -2,7 +2,7 @@
 
 import pytest
 import math
-from gps_spoofing_detector.utils import (
+from gps_modulator.utils import (
     haversine_distance, 
     compute_velocity, 
     validate_coordinates,
