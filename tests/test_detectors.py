@@ -1,7 +1,7 @@
 """Tests for spoofing detection algorithms."""
 
 import pytest
-from gps_spoofing_detector.detectors import VelocityAnomalyDetector
+from gps_modulator.detectors import VelocityAnomalyDetector
 
 
 class TestVelocityAnomalyDetector:
