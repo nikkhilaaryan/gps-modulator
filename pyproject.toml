@@ -45,7 +45,7 @@ Repository = "https://github.com/aryan0931/gps-spoofing-detector.git"
 "Bug Tracker" = "https://github.com/aryan0931/gps-spoofing-detector/issues"
 
 [project.scripts]
-gps-spoofing-detector = "gps_spoofing_detector.cli:main"
+gps-spoofing-detector = "gps_modulator.cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
