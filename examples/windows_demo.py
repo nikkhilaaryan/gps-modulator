@@ -16,7 +16,7 @@ import os
 # Add the source directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from gps_spoofing_detector.visualization.live_plotter import LivePathPlotter
+from gps_modulator.visualization.live_plotter import LivePathPlotter
 
 def windows_demo():
     """Windows-specific demo with enhanced display handling."""
