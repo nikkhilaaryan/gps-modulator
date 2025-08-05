@@ -22,7 +22,7 @@ The system is organized into modular components:
 ```
 gps-spoofing-detector/
 ├── src/
-│   └── gps_spoofing_detector/
+│   └── gps_modulator/
 │       ├── __init__.py
 │       ├── cli.py                 # Command-line interface
 │       ├── detectors/             # Spoofing detection algorithms
@@ -86,7 +86,7 @@ gps-spoofing-detector --threshold 25 --max-points 500 --verbose
 ### Python API Usage
 
 ```python
-from gps_spoofing_detector import (
+from gps_modulator import (
     VelocityAnomalyDetector,
     PathCorrector,
     GpsReader,
@@ -125,7 +125,7 @@ for point in gps_reader.stream():
 ### Detector Configuration
 
 ```python
-from gps_spoofing_detector.detectors import VelocityAnomalyDetector
+from gps_modulator.detectors import VelocityAnomalyDetector
 
 # Create detector with custom threshold
 detector = VelocityAnomalyDetector(threshold_mps=30.0)
@@ -134,7 +134,7 @@ detector = VelocityAnomalyDetector(threshold_mps=30.0)
 ### Mock Data Configuration
 
 ```python
-from gps_spoofing_detector.streaming import MockGpsGenerator
+from gps_modulator.streaming import MockGpsGenerator
 
 # Configure mock data with custom parameters
 generator = MockGpsGenerator(
@@ -199,7 +199,7 @@ pytest tests/
 Run with coverage:
 
 ```bash
-pytest tests/ --cov=gps_spoofing_detector
+pytest tests/ --cov=gps_modulator
 ```
 
 ## Development
