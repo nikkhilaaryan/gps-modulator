@@ -1,3 +1,6 @@
 # Core dependencies for GPS spoofing detector
 matplotlib>=3.5.0
 numpy>=1.21.0
+# Additional dependencies for IMU integration
+scipy>=1.7.0
+pandas>=1.3.0
