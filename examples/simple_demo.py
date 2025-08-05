@@ -12,7 +12,7 @@ import os
 # Add the source directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from gps_spoofing_detector.visualization import LivePathPlotter
+from gps_modulator.visualization import LivePathPlotter
 
 def simple_demo():
     """Simple demo that ensures the graph is visible."""
