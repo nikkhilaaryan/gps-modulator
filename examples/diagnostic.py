@@ -13,7 +13,7 @@ import platform
 def run_diagnostics():
     """Run comprehensive diagnostics for matplotlib display issues."""
     
-    print("🩺 MATLABPLOT DIAGNOSTIC REPORT")
+    print(" MATLABPLOT DIAGNOSTIC REPORT")
     print("=" * 50)
     
     # System information
