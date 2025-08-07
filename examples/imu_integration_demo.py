@@ -228,7 +228,7 @@ def run_imu_integration_demo():
                 bbox=dict(boxstyle="round,pad=0.5", facecolor='lightyellow', alpha=0.8))
         
         plt.tight_layout()
-        print("\n✅ IMU-assisted spoofing mitigation visualization complete! Close plot to continue...")
+        print("\n IMU-assisted spoofing mitigation visualization complete! Close plot to continue...")
         plt.show(block=True)
         
     except Exception as e:
