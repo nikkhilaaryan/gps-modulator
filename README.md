@@ -1,6 +1,6 @@
 # gps-modulator
 
-A comprehensive Python package for real-time detection and correction of GPS spoofing attacks using velocity-based anomaly detection and dead reckoning techniques.
+A comprehensive Python package for real-time detection and correction of GPS spoofing attacks using velocity-based anomaly detection, dead reckoning techniques, and IMU integration.
 
 ---
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Version](https://img.shields.io/badge/version-1.0.0-orange) ![Python](https://img.shields.io/badge/python-3.8%2B-blue) ![Platform](https://img.shields.io/badge/platform-cross--platform-purple)
@@ -20,32 +20,33 @@ A comprehensive Python package for real-time detection and correction of GPS spo
 The system is organized into modular components:
 
 ```
-gps-spoofing-detector/
+gps-modulator/
 ├── src/
 │   └── gps_modulator/
-│       ├── __init__.py
-│       ├── cli.py                 # Command-line interface
-│       ├── detectors/             # Spoofing detection algorithms
+│       ├── __init__.py          # Package exports
+│       ├── cli.py               # Command-line interface
+│       ├── detectors/           # Spoofing detection algorithms
 │       │   ├── __init__.py
 │       │   └── velocity_anomaly_detector.py
-│       ├── correction/            # GPS correction methods
+│       ├── correction/          # GPS correction methods
 │       │   ├── __init__.py
 │       │   ├── path_corrector.py
-│       │   └── dead_reckoner.py
-│       ├── streaming/             # GPS data streaming
+│       │   ├── dead_reckoner.py
+│       │   └── imu_handler.py   # IMU integration
+│       ├── streaming/           # GPS data streaming
 │       │   ├── __init__.py
 │       │   ├── gps_reader.py
-│       │   └── data_generators.py
-│       ├── visualization/           # Real-time plotting
+│       │   ├── data_generators.py
+│       │   └── imu_streamer.py  # IMU streaming
+│       ├── visualization/       # Real-time plotting
 │       │   ├── __init__.py
 │       │   └── live_plotter.py
-│       └── utils/                   # Mathematical utilities
+│       └── utils/               # Mathematical utilities
 │           ├── __init__.py
 │           └── gps_math.py
-├── tests/                         # Unit tests
-├── examples/                      # Usage examples
-├── docs/                          # Documentation
-├── setup.py                       # Package configuration
+├── examples/                    # Usage examples and demos
+├── tests/                       # Unit tests
+├── pyproject.toml               # Modern package configuration
 └── README.md
 ```
 
@@ -54,8 +55,8 @@ gps-spoofing-detector/
 ### From Source
 
 ```bash
-git clone <repository-url>
-cd gps-spoofing-detector
+git clone https://github.com/aryan0931/gps-spoofing-detector.git
+cd gps-modulator
 pip install -e .
 ```
 
@@ -63,6 +64,12 @@ pip install -e .
 
 ```bash
 pip install -e ".[dev]"
+```
+
+### Quick Install
+
+```bash
+pip install gps-modulator
 ```
 
 ## Quick Start
@@ -83,33 +90,95 @@ gps-spoofing-detector --threshold 30.0
 gps-spoofing-detector --threshold 25 --max-points 500 --verbose
 ```
 
+### Examples and Demos
+
+The project includes several comprehensive examples in the `examples/` directory:
+
+#### Basic Demos
+```bash
+# Simple static demo (guaranteed to work)
+python examples/static_demo.py
+
+# Interactive live demo
+python examples/simple_demo.py
+
+# Windows-optimized demo
+python examples/windows_demo.py
+```
+
+#### Advanced Examples
+```bash
+# IMU integration demo with storytelling
+python examples/imu_integration_demo.py
+
+# Test visualization
+python examples/test_visualization.py
+
+# Diagnostic for display issues
+python examples/diagnostic.py
+```
+
 ### Python API Usage
 
+#### Basic Usage
 ```python
 from gps_modulator import (
     VelocityAnomalyDetector,
     PathCorrector,
     GpsReader,
     LivePathPlotter,
-    MockGpsGenerator
+    EnhancedGpsReader
 )
 
 # Initialize components
 detector = VelocityAnomalyDetector(threshold_mps=50.0)
 corrector = PathCorrector()
 
-# Create mock data source
-generator = MockGpsGenerator()
-gps_reader = GpsReader(generator.generate)
+# Create enhanced GPS reader with IMU support
+reader = EnhancedGpsReader()
 
 # Process GPS data
 previous_point = None
-for point in gps_reader.stream():
+for point in reader.stream():
     is_spoofed = detector.detect(previous_point, point)
     if is_spoofed:
-        corrected_point = corrector.correct(previous_point, point, is_spoofed=True)
+        corrected_point = corrector.correct(point, is_spoofed=True)
         print(f"Spoofing detected and corrected: {corrected_point}")
     previous_point = point
+```
+
+#### Advanced IMU Integration
+```python
+from gps_modulator import (
+    VelocityAnomalyDetector,
+    PathCorrector,
+    EnhancedIMUHandler,
+    LivePathPlotter
+)
+
+# Initialize with IMU support
+detector = VelocityAnomalyDetector(threshold_mps=30.0)
+corrector = PathCorrector()
+corrector.enable_imu_correction()
+
+# Add magnetic declination for your location
+corrector.set_magnetic_declination(-13.0)  # NYC example
+
+# Real-time processing with visualization
+plotter = LivePathPlotter(max_points=1000)
+plotter.setup_plot()
+
+# Process streaming data with IMU backup
+for gps_point, imu_data in zip(gps_stream, imu_stream):
+    is_spoofed = detector.detect(gps_point)
+    
+    if is_spoofed:
+        # Use IMU data for correction during spoofing
+        corrected = corrector.correct(gps_point, is_spoofed=True, imu_data=imu_data)
+    else:
+        corrected = corrector.correct(gps_point, is_spoofed=False)
+    
+    plotter.add_point(gps_point, corrected, is_spoofed)
 ```
 
 ## Configuration
@@ -200,6 +269,50 @@ Run with coverage:
 
 ```bash
 pytest tests/ --cov=gps_modulator
+```
+
+## Troubleshooting
+
+### Display Issues (Windows)
+
+If matplotlib windows don't appear or close immediately:
+
+1. **Use the diagnostic script:**
+   ```bash
+   python examples/diagnostic.py
+   ```
+
+2. **Try specific demos:**
+   ```bash
+   python examples/static_demo.py    # Most reliable
+   python examples/windows_demo.py   # Windows-optimized
+   ```
+
+3. **Manual fixes:**
+   - Run as administrator
+   - Install Microsoft Visual C++ Redistributable
+   - Use Windows Terminal instead of Command Prompt
+
+### Common Error Messages
+
+- **"No module named 'gps_modulator'":**
+  ```bash
+  pip install -e .
+  ```
+
+- **"Backend Qt5Agg is interactive..."**: Use `TkAgg` backend
+- **Window appears then disappears**: Use `plt.show(block=True)`
+
+### Performance Optimization
+
+For large datasets:
+```python
+plotter = LivePathPlotter(max_points=500)  # Reduce points
+```
+
+For headless environments:
+```bash
+python examples/static_demo.py  # No animation
 ```
 
 ## Development
