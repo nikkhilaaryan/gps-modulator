@@ -68,7 +68,7 @@ def run_diagnostics():
         
     except Exception as e:
         print(f" ERROR: {e}")
-        print("\n🔧 TROUBLESHOOTING STEPS:")
+        print("\n TROUBLESHOOTING STEPS:")
         print("1. Ensure you have a display (not running headless)")
         print("2. Try running: python -m pip install --upgrade matplotlib")
         print("3. Try different backend: matplotlib.use('Qt5Agg')")
