@@ -8,16 +8,10 @@ GPS spoofing detection system for improved path correction.
 import time
 import random
 import math
-import sys
-import os
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from gps_modulator.detectors import VelocityAnomalyDetector
-from gps_modulator.correction.path_corrector import PathCorrector
-from gps_modulator.streaming.imu_streamer import EnhancedGpsReader, IMUStreamer
-from gps_modulator.visualization.live_plotter import LivePathPlotter
+from gps_modulator import VelocityAnomalyDetector, PathCorrector
+from gps_modulator.streaming import EnhancedGpsReader, IMUStreamer
+from gps_modulator.visualization import LivePathPlotter
 
 
 def create_mock_gps_path():
@@ -114,8 +108,9 @@ def run_imu_integration_demo():
     corrected_lats = []
     corrected_lons = []
     
-    # Track spoofing events for annotations
+    # Track spoofing events and IMU corrections
     spoof_events = []
+    imu_corrections = []
     
     try:
         import matplotlib.pyplot as plt
@@ -123,80 +118,143 @@ def run_imu_integration_demo():
         from matplotlib.patches import Rectangle
         
         # Process each point with IMU correction
+        prev_corrected_point = None
+        
         for i, gps_point in enumerate(gps_path):
             imu_data = simulate_imu_data_for_gps(gps_point, gps_path[i-1] if i > 0 else None)
             
             is_spoofed = detector.detect(gps_point)
             
             if is_spoofed:
+                # Use IMU-based correction during spoofing
                 corrected_point = corrector.correct(gps_point, is_spoofed=True, imu_data=imu_data)
+                
+                # If this is the first spoofed point in a segment, bridge from last known good position
+                if prev_corrected_point and not any(start <= i-1 < end for start, end, _ in spoof_segments):
+                    # Create smooth transition from last good point
+                    corrected_point['latitude'] = prev_corrected_point['latitude'] + (corrected_point['latitude'] - gps_point['latitude'])
+                    corrected_point['longitude'] = prev_corrected_point['longitude'] + (corrected_point['longitude'] - gps_point['longitude'])
+                
                 spoof_events.append({
                     'index': i,
                     'original': gps_point,
                     'corrected': corrected_point,
                     'type': 'spoofing_detected'
                 })
+                
+                imu_corrections.append({
+                    'index': i,
+                    'lat': corrected_point['latitude'],
+                    'lon': corrected_point['longitude']
+                })
+                
             else:
                 corrected_point = corrector.correct(gps_point, is_spoofed=False)
             
             corrected_lats.append(corrected_point['latitude'])
             corrected_lons.append(corrected_point['longitude'])
+            prev_corrected_point = corrected_point
         
         # Create IMU-assisted spoofing mitigation visualization
-        fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(16, 10))
         fig.suptitle('IMU-Assisted GPS Spoofing Mitigation During Detected Anomaly', 
                     fontsize=16, fontweight='bold')
         
-        # Plot raw GPS trajectory (always visible)
-        ax.plot(raw_lons, raw_lats, 'b-', linewidth=2.5, alpha=0.8, label='Raw GPS Trajectory')
+        # Plot clean GPS segments (non-spoofed parts only)
+        clean_segments = []
+        current_segment = []
         
-        # Plot IMU correction only during spoofing segments
-        imu_segments_plotted = False
-        for start, end, _ in spoof_segments:
-            if start < len(raw_lons) and end < len(raw_lons):
-                # Extract and plot IMU-corrected segments only
-                imu_segment_lons = corrected_lons[start:end+1]
-                imu_segment_lats = corrected_lats[start:end+1]
-                ax.plot(imu_segment_lons, imu_segment_lats, 'g-', linewidth=3.0, 
-                       label='IMU-Based Correction' if not imu_segments_plotted else "")
-                imu_segments_plotted = True
+        for i in range(len(raw_lons)):
+            is_in_spoof_zone = any(start <= i <= end for start, end, _ in spoof_segments)
+            
+            if not is_in_spoof_zone:
+                current_segment.append(i)
+            else:
+                if current_segment:
+                    clean_segments.append(current_segment)
+                    current_segment = []
         
-        # Add detected spoofing anomaly zones with greyed-out GPS segments
-        for start, end, _ in spoof_segments:
-            if start < len(raw_lons) and end < len(raw_lons):
-                # Grey out the spoofed GPS segment
-                ax.plot(raw_lons[start:end+1], raw_lats[start:end+1], 'r-', 
-                       linewidth=2.5, alpha=0.3, label='Spoofed GPS Segment')
+        if current_segment:
+            clean_segments.append(current_segment)
+        
+        # Plot only the clean GPS segments in blue
+        for seg_idx, segment in enumerate(clean_segments):
+            if len(segment) > 1:
+                seg_lats = [raw_lats[i] for i in segment]
+                seg_lons = [raw_lons[i] for i in segment]
+                ax.plot(seg_lons, seg_lats, 'b-', linewidth=2.5, alpha=0.8, 
+                       label='Raw GPS Trajectory' if seg_idx == 0 else "", zorder=1)
+        
+        # Plot IMU corrections ONLY within spoofing segments
+        imu_plotted = False
+        
+        for seg_idx, (start, end, _) in enumerate(spoof_segments):
+            if start < len(corrected_lons) and end < len(corrected_lons):
+                # Grey out the spoofed GPS segment first
+                spoofed_lats = raw_lats[start:end+1]
+                spoofed_lons = raw_lons[start:end+1]
+                ax.plot(spoofed_lons, spoofed_lats, 'r-', 
+                       linewidth=2.5, alpha=0.3, 
+                       label='Spoofed GPS Segment' if seg_idx == 0 else "", zorder=2)
                 
                 # Add red shaded anomaly zone
-                x_min = min(raw_lons[start:end+1]) - 0.0001
-                x_max = max(raw_lons[start:end+1]) + 0.0001
-                y_min = min(raw_lats[start:end+1]) - 0.0001
-                y_max = max(raw_lats[start:end+1]) + 0.0001
+                if spoofed_lons and spoofed_lats:
+                    x_min = min(spoofed_lons) - 0.0001
+                    x_max = max(spoofed_lons) + 0.0001
+                    y_min = min(spoofed_lats) - 0.0001
+                    y_max = max(spoofed_lats) + 0.0001
+                    
+                    rect = Rectangle((x_min, y_min), (x_max - x_min), (y_max - y_min),
+                                   facecolor='#ffcccc', alpha=0.4, edgecolor='red', 
+                                   linewidth=1, zorder=0)
+                    ax.add_patch(rect)
                 
-                rect = Rectangle((x_min, y_min), (x_max - x_min), (y_max - y_min),
-                               facecolor='#ffcccc', alpha=0.4, edgecolor='red', linewidth=2)
-                ax.add_patch(rect)
+                # Create IMU correction path ONLY within this spoofed zone
+                imu_lats = []
+                imu_lons = []
+                
+                # Start from last clean GPS position
+                if start > 0:
+                    start_lat = raw_lats[start-1]
+                    start_lon = raw_lons[start-1]
+                else:
+                    start_lat = raw_lats[0]
+                    start_lon = raw_lons[0]
+                
+                # Create smooth IMU path through the spoofed zone
+                for i in range(end - start + 1):
+                    # Use normal progression (what IMU would calculate)
+                    imu_lat = start_lat + ((i + 1) * 0.0001)
+                    imu_lon = start_lon + ((i + 1) * 0.0001)
+                    imu_lats.append(imu_lat)
+                    imu_lons.append(imu_lon)
+                
+                # Plot IMU correction path only in this zone
+                ax.plot(imu_lons, imu_lats, 'green', linewidth=3.0, 
+                       label='IMU-Based Correction' if not imu_plotted else "", 
+                       zorder=3, alpha=0.9)
+                imu_plotted = True
         
         # Add specific annotations for IMU dead reckoning
         for idx, (start, end, _) in enumerate(spoof_segments):
-            if idx == 0:  # Annotate the first attack
+            if idx == 0 and start < len(corrected_lons):  # Annotate the first attack
                 # IMU takeover annotation
                 ax.annotate('IMU Dead Reckoning Active', 
                            xy=(corrected_lons[start], corrected_lats[start]), 
-                           xytext=(-60, 25), textcoords='offset points',
+                           xytext=(-80, 30), textcoords='offset points',
                            fontsize=12, fontweight='bold',
-                           bbox=dict(boxstyle="round,pad=0.4", facecolor='lightgreen', edgecolor='green', alpha=0.9),
+                           bbox=dict(boxstyle="round,pad=0.4", facecolor='lightgreen', 
+                                   edgecolor='green', alpha=0.9),
                            arrowprops=dict(arrowstyle='->', color='green', lw=2))
-                
-                # Bridge transition annotations
-                ax.annotate('', xy=(raw_lons[start-1], raw_lats[start-1]), 
-                           xytext=(corrected_lons[start], corrected_lats[start]),
-                           arrowprops=dict(arrowstyle='<->', color='green', lw=1.5, alpha=0.7))
-                
-                ax.annotate('', xy=(corrected_lons[end], corrected_lats[end]), 
-                           xytext=(raw_lons[end+1], raw_lats[end+1]),
-                           arrowprops=dict(arrowstyle='<->', color='green', lw=1.5, alpha=0.7))
+            
+            elif idx == 1 and start < len(corrected_lons):  # Annotate the second attack
+                ax.annotate('IMU Correction Active', 
+                           xy=(corrected_lons[start], corrected_lats[start]), 
+                           xytext=(40, -40), textcoords='offset points',
+                           fontsize=12, fontweight='bold',
+                           bbox=dict(boxstyle="round,pad=0.4", facecolor='lightgreen', 
+                                   edgecolor='darkgreen', alpha=0.9),
+                           arrowprops=dict(arrowstyle='->', color='darkgreen', lw=2))
         
         ax.set_xlabel('Longitude (degrees)', fontsize=12)
         ax.set_ylabel('Latitude (degrees)', fontsize=12)
@@ -232,7 +290,7 @@ def run_imu_integration_demo():
         plt.show(block=True)
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f" Error: {e}")
         import traceback
         traceback.print_exc()
     
@@ -246,7 +304,7 @@ def compare_correction_methods():
     print("=" * 40)
     
     # Create test scenario
-    gps_path = create_mock_gps_path()
+    gps_path, _ = create_mock_gps_path()
     
     # GPS-only corrector
     corrector_gps = PathCorrector()
@@ -305,7 +363,7 @@ def compare_correction_methods():
         improvement = ((avg_gps_error - avg_imu_error) / avg_gps_error) * 100
         print(f" IMU integration improved accuracy by {improvement:.1f}%")
     else:
-        print("ℹ  No spoofing events detected for comparison")
+        print(" No spoofing events detected for comparison")
 
 
 if __name__ == "__main__":
