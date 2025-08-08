@@ -6,8 +6,6 @@ Diagnostic script to troubleshoot matplotlib display issues on Windows.
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-import os
 import platform
 
 def run_diagnostics():
