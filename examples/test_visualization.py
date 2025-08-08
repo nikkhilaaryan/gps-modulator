@@ -4,11 +4,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-import sys
-import os
-
-# Add the source directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from gps_modulator.visualization import LivePathPlotter
 
@@ -41,11 +36,10 @@ def test_visualization():
     print("Starting animation...")
     plotter.start_animation(interval=1000)
     
-    # Keep the window open
+    # Keep the window open with proper event handling
     try:
-        print("Graph window should be visible now. Press Ctrl+C to close.")
-        while True:
-            time.sleep(1)
+        print("Graph window should be visible now. Close the window to exit.")
+        plt.show(block=True)  # Use matplotlib's blocking show instead of infinite loop
     except KeyboardInterrupt:
         print("\nClosing visualization...")
     finally:
