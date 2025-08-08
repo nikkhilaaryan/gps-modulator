@@ -6,11 +6,6 @@ matplotlib.use('TkAgg')  # Force Tk backend
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-import sys
-import os
-
-# Add the source directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from gps_modulator.visualization import LivePathPlotter
 
@@ -61,16 +56,21 @@ def simple_demo():
         
         time.sleep(0.5)
     
-    # Start animation to keep updating
-    plotter.start_animation(interval=1000)
-    
-    print("\nDemo complete! Graph is now live-updating.")
+    # Ensure window stays open
+    print("\nDemo complete! Graph is now visible.")
     print("   Close the matplotlib window to exit.")
     
     try:
-        plt.show()  # Keep window open
+        # Force window to stay open
+        plt.ioff()  # Turn off interactive mode
+        plt.show(block=True)  # Block until window closed
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        print(f"Error: {e}")
+        # Fallback: save to file if display fails
+        plt.savefig('gps_demo_output.png')
+        print("Graph saved to gps_demo_output.png")
     finally:
         plotter.close()
 
