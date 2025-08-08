@@ -1,0 +1,21 @@
+# Optional dependencies for real-time GPS hardware integration
+# Install with: pip install -r requirements-realtime.txt
+
+# Serial GPS support
+pyserial>=3.5
+
+# NMEA parsing for GPS data
+pynmea2>=1.19.0
+
+# HTTP GPS API support
+requests>=2.28.0
+
+# GPSD daemon support (Linux)
+gps3>=0.33.0
+
+# Additional GPS libraries
+geopy>=2.2.0  # For coordinate calculations
+gpxpy>=1.5.0  # For GPX file support
+
+# Development tools
+python-gps>=3.19  # For GPSD integration on Linux
