@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+import csv
 from typing import Dict, Any
 
 try:
@@ -28,6 +29,21 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
+def csv_stream_source(filepath):
+    """Yield GPS points from a CSV file with columns: latitude, longitude, altitude, timestamp."""
+    import csv
+    with open(filepath, 'r', newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                yield {
+                    'latitude': float(row['latitude']),
+                    'longitude': float(row['longitude']),
+                    'altitude': float(row['altitude']),
+                    'timestamp': float(row['timestamp'])
+                }
+            except Exception as e:
+                print(f"Skipping row due to error: {e} -- {row}")
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure argument parser."""
     parser = argparse.ArgumentParser(
@@ -74,6 +90,13 @@ Examples:
         help='Enable verbose logging'
     )
     
+    parser.add_argument(
+        '--csv',
+        type=str,
+        default=None,
+        help='Path to CSV file with GPS data (columns: lat, lon, timestamp)'
+    )
+    
     return parser
 
 
@@ -92,17 +115,20 @@ def run_detection_system(args: argparse.Namespace) -> None:
     detector = VelocityAnomalyDetector(threshold_velocity=args.threshold)
     corrector = PathCorrector()
     
-    # Create mock GPS generator
-    gps_generator = MockGpsGenerator(
-        start_lat=37.7749,
-        start_lon=-122.4194,
-        velocity_mps=5.0,
-        spoof_rate=0.15,
-        spoof_magnitude=0.001
-    )
-    
-    # Create GPS reader
-    gps_reader = GpsReader(gps_generator.generate)
+    # Choose GPS data source
+    if args.csv:
+        logger.info(f"Using CSV file as GPS data source: {args.csv}")
+        gps_reader = GpsReader(lambda: csv_stream_source(args.csv))
+    else:
+        # Create mock GPS generator
+        gps_generator = MockGpsGenerator(
+            start_lat=37.7749,
+            start_lon=-122.4194,
+            velocity_mps=5.0,
+            spoof_rate=0.15,
+            spoof_magnitude=0.001
+        )
+        gps_reader = GpsReader(gps_generator.generate)
     
     # Initialize plotter if not disabled
     plotter = None
@@ -160,18 +186,20 @@ def run_detection_system(args: argparse.Namespace) -> None:
             previous_point = current_point
             
             # Allow graceful shutdown
-            if not args.no_plot and not plt.fignum_exists(plotter.fig.number if plotter else 0):
-                logger.info("Visualization window closed by user")
-                break
+            # if not args.no_plot and not plt.fignum_exists(plotter.fig.number if plotter else 0):
+            #     logger.info("Visualization window closed by user")
+            #     break
                 
     except KeyboardInterrupt:
         logger.info("Shutting down...")
     except Exception as e:
         logger.error(f"Error during processing: {e}", exc_info=True)
     finally:
-        # Cleanup
         if plotter:
             plotter.close()
+            if plt and not args.no_plot:
+                plt.show()
+                input("Press Enter to exit...")
         
         # Print summary
         if total_points > 0:
