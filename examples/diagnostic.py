@@ -2,7 +2,8 @@
 """
 Diagnostic script to troubleshoot matplotlib display issues on Windows.
 """
-
+import os
+import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
