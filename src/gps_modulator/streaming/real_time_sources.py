@@ -1,7 +1,9 @@
-"""Real-time GPS data sources for live hardware integration."""
-
 import time
 import logging
+import os
+import math
+import random
+import csv
 from typing import Dict, Any, Iterator, Optional
 from abc import ABC, abstractmethod
 
@@ -186,67 +188,139 @@ class FileGPSSource(RealTimeSource):
     
     def stream(self) -> Iterator[Dict[str, Any]]:
         """Stream GPS data from file."""
-        import csv
         
-        while True:
-            try:
-                if os.path.exists(self.filepath):
-                    current_size = os.path.getsize(self.filepath)
-                    if current_size > self.last_size:
-                        with open(self.filepath, 'r') as f:
-                            f.seek(self.last_position)
-                            reader = csv.DictReader(f)
-                            for row in reader:
-                                yield {
-                                    'latitude': float(row['lat']),
-                                    'longitude': float(row['lon']),
-                                    'timestamp': float(row.get('timestamp', time.time())),
-                                    'speed': float(row.get('speed', 0.0))
-                                }
-                            self.last_position = f.tell()
-                        self.last_size = current_size
-                time.sleep(self.update_interval)
-            except Exception as e:
-                self.logger.warning(f"File GPS error: {e}")
-                time.sleep(5)
-    
+        if not os.path.exists(self.filepath):
+            self.logger.error(f"File not found: {self.filepath}")
+            return # Exit if file doesn't exist
+
+        try:
+            with open(self.filepath, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    yield {
+                        'latitude': float(row['latitude']),
+                        'longitude': float(row['longitude']),
+                        'altitude': float(row.get('altitude', 0.0)),
+                        'timestamp': float(row.get('timestamp', time.time()))
+                    }
+        except Exception as e:
+            self.logger.error(f"Error reading from file {self.filepath}: {e}")
+
     def stop(self) -> None:
-        """No cleanup needed for file source."""
+        """No specific cleanup needed for file source."""
         pass
 
 
-class GPSSourceFactory:
-    """Factory class for creating GPS data sources."""
-    
-    @staticmethod
-    def create_source(source_type: str, **kwargs) -> RealTimeSource:
+class MockGpsGenerator(RealTimeSource):
+    """Generates mock GPS data for testing and demonstration."""
+
+    def __init__(
+        self,
+        start_lat: float = 34.0522,
+        start_lon: float = -118.2437,
+        velocity_mps: float = 1.0,
+        spoof_rate: float = 0.05,
+        spoof_magnitude: float = 0.0001,
+        update_interval: float = 1.0
+    ):
         """
-        Create GPS source based on type.
-        
+        Initialize the mock GPS generator.
+
         Args:
-            source_type: 'serial', 'http', 'file', or 'mock'
-            **kwargs: Configuration parameters
-        
-        Returns:
-            RealTimeSource instance
+            start_lat: Starting latitude.
+            start_lon: Starting longitude.
+            velocity_mps: Simulated velocity in meters per second.
+            spoof_rate: Probability of a spoofing event (0.0 to 1.0).
+            spoof_magnitude: Magnitude of the spoofing jump in degrees.
+            update_interval: Time interval between generated points in seconds.
         """
-        if source_type == 'serial':
-            return SerialGPSSource(
-                port=kwargs.get('port', 'COM3'),
-                baud_rate=kwargs.get('baud', 9600)
-            )
-        elif source_type == 'http':
-            return HttpGPSSource(
-                api_url=kwargs.get('url', 'http://localhost:8080/gps'),
-                update_interval=kwargs.get('interval', 1.0)
-            )
-        elif source_type == 'file':
-            return FileGPSSource(
-                filepath=kwargs.get('path', 'live_gps.csv'),
-                update_interval=kwargs.get('interval', 1.0)
-            )
-        else:
-            raise ValueError(f"Unknown source type: {source_type}")
+        self.current_lat = start_lat
+        self.current_lon = start_lon
+        self.velocity_mps = velocity_mps
+        self.spoof_rate = spoof_rate
+        self.spoof_magnitude = spoof_magnitude
+        self.update_interval = update_interval
+        self.logger = logging.getLogger(__name__)
+
+    def start(self) -> None:
+        """No specific start action for mock generator."""
+        self.logger.info("Mock GPS generator started.")
+
+    def stream(self) -> Iterator[Dict[str, Any]]:
+        """Stream mock GPS data points."""
+        while True:
+            # Simulate movement (simple linear progression for demonstration)
+            # 1 degree of latitude is approx 111,320 meters
+            # 1 degree of longitude is approx 111,320 * cos(latitude) meters
+            delta_lat = (self.velocity_mps * self.update_interval) / 111320.0
+            delta_lon = (self.velocity_mps * self.update_interval) / (111320.0 * abs(math.cos(math.radians(self.current_lat))))
+
+            self.current_lat += delta_lat
+            self.current_lon += delta_lon
+
+            # Simulate spoofing
+            is_spoofed = False
+            if random.random() < self.spoof_rate:
+                self.current_lat += random.uniform(-self.spoof_magnitude, self.spoof_magnitude)
+                self.current_lon += random.uniform(-self.spoof_magnitude, self.spoof_magnitude)
+                is_spoofed = True
+                self.logger.debug("Simulating spoofing event.")
+
+            point = {
+                'latitude': self.current_lat,
+                'longitude': self.current_lon,
+                'altitude': 100.0,  # Static altitude for mock data
+                'timestamp': time.time(),
+                'speed': self.velocity_mps,
+                'is_spoofed_simulated': is_spoofed # For internal mock data tracking
+            }
+            yield point
+            time.sleep(self.update_interval)
+
+    def stop(self) -> None:
+        """No specific stop action for mock generator."""
+        self.logger.info("Mock GPS generator stopped.")
+
+
+def create_gps_source(
+    source_type: str,
+    file_path: Optional[str] = None,
+    port: Optional[str] = None,
+    baud_rate: int = 9600,
+    url: Optional[str] = None
+) -> RealTimeSource:
+    """
+    Factory function to create a GPS data source based on type.
+
+    Args:
+        source_type: Type of GPS data source ('mock', 'file', 'serial', 'http').
+        file_path: Path to input file for 'file' source type.
+        port: Serial port for 'serial' source type.
+        baud_rate: Baud rate for 'serial' source type.
+        url: URL for 'http' source type.
+
+    Returns:
+        An instance of a RealTimeSource subclass.
+
+    Raises:
+        ValueError: If an invalid source_type is provided or required arguments are missing.
+    """
+    if source_type == 'mock':
+        return MockGpsGenerator()
+    elif source_type == 'file':
+        if not file_path:
+            raise ValueError("file_path is required for 'file' source type.")
+        return FileGPSSource(file_path)
+    elif source_type == 'serial':
+        if not port:
+            raise ValueError("port is required for 'serial' source type.")
+        return SerialGPSSource(port, baud_rate)
+    elif source_type == 'http':
+        if not url:
+            raise ValueError("url is required for 'http' source type.")
+        return HttpGPSSource(url)
+    else:
+        raise ValueError(f"Unknown source type: {source_type}")
 
 
 # Convenience functions for direct usage
