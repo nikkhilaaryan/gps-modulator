@@ -5,6 +5,7 @@ A comprehensive Python package for real-time detection and correction of GPS spo
 ---
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Version](https://img.shields.io/badge/version-1.0.0-orange) ![Python](https://img.shields.io/badge/python-3.8%2B-blue) ![Platform](https://img.shields.io/badge/platform-cross--platform-purple)
 ---
+**Disclaimer**: This software is in active development and may undergo significant architectural or functional changes. Features, APIs, and documentation are subject to modification without prior notice.
 
 ## Features
 
